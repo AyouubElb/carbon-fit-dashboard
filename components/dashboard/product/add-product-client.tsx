@@ -17,9 +17,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { processImagesServerSide } from "@/lib/images";
 import { toast } from "sonner";
 
-type Props = { pageType?: string | null };
+type Props = { pageType?: string | string[] | null };
 
-const AddProductClient: React.FC<Props> = ({ pageType }) => {
+const AddProductClient: React.FC<Props> = ({ pageType = null }) => {
   const router = useRouter();
 
   //const product = use(productPromise);

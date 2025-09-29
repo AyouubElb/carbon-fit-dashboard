@@ -4,7 +4,7 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Product,
   ProductFormData,
@@ -17,10 +17,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { processImagesServerSide } from "@/lib/images";
 import { toast } from "sonner";
 
-type Props = { pageType?: string | string[] | null };
-
-const AddProductClient: React.FC<Props> = ({ pageType = null }) => {
+const AddProductClient = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
   //const product = use(productPromise);
   const methods = useForm<ProductFormData>({
@@ -45,7 +45,7 @@ const AddProductClient: React.FC<Props> = ({ pageType = null }) => {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
+      const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
       const finalImages = await processImagesServerSide(
         data.images ?? [],
@@ -65,7 +65,8 @@ const AddProductClient: React.FC<Props> = ({ pageType = null }) => {
         images: finalImages,
       };
 
-      const method = pageType === "edit" ? "PUT" : "POST";
+      const method = urlPageType === "edit" ? "PUT" : "POST";
+      console.log("method:", urlPageType, method);
 
       const res = await fetch("/api/product", {
         method,

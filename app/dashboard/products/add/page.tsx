@@ -1,12 +1,16 @@
 import AddProductClient from "@/components/dashboard/product/add-product-client";
+import { Suspense } from "react";
 
-type SearchParams = { type?: string | string[] | undefined };
-
-export default function AddProductPage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
-  const pageType = searchParams?.type ?? null;
-  return <AddProductClient pageType={pageType} />;
+export default function AddProductPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-64">
+          <p className="text-lg text-gray-500">Loading ...</p>
+        </div>
+      }
+    >
+      <AddProductClient />
+    </Suspense>
+  );
 }

@@ -1,7 +1,5 @@
-import { supabase } from "./supabase/client";
-
 // utils/images.ts (or inline in your component)
-const SUPABASE_IMAGE_URL =
+/*const SUPABASE_IMAGE_URL =
   "https://bnamvffvziulrvptnjax.supabase.co/storage/v1/object/public/";
 
 const isDataUrl = (s?: string) =>
@@ -23,7 +21,7 @@ function slugifyBrand(brand?: string) {
       .replace(/(^-|-$)/g, "") || // trim leading/trailing hyphens
     "unknown"
   );
-}
+}*/
 
 // images.ts (client-side)
 async function dataUrlToFile(dataUrl: string, filename = "image.png") {
@@ -32,10 +30,6 @@ async function dataUrlToFile(dataUrl: string, filename = "image.png") {
   return new File([blob], filename, { type: blob.type });
 }
 
-/**
- * Upload via server route (uses service_role on server).
- * Accepts either a File or a data URL string (you can call dataUrlToFile first).
- */
 export async function uploadFileToServer(
   fileOrDataUrl: File | string,
   brand?: string
@@ -63,12 +57,6 @@ export async function uploadFileToServer(
   return json.filename as string; // e.g. "products-images/audi/169...png"
 }
 
-/**
- * Process images array and return final array of storage paths or kept URLs/passed paths.
- * - images: array of strings (data URLs, full supabase URLs, storage paths, external URLs)
- * - productId: optional - used to store files under product folder
- */
-// images.ts (continued)
 export async function processImagesServerSide(
   images: (string | undefined)[],
   brand?: string
@@ -77,7 +65,7 @@ export async function processImagesServerSide(
   const results: Promise<string | null>[] = images.map(async (img) => {
     if (!img) return null;
 
-    // already a storage filename (e.g. "products-images/brand/xxx.png")
+    // already a storage filename
     if (img.startsWith("products-images/")) return img;
 
     // full public supabase url -> convert to filename by stripping base
@@ -89,13 +77,12 @@ export async function processImagesServerSide(
     // external http url -> keep as-is
     if (/^https?:\/\//i.test(img)) return img;
 
-    // data URL -> upload via server (dedupe identical data URLs)
+    // data URL -> upload via server
     if (img.startsWith("data:")) {
       if (!cache.has(img)) cache.set(img, uploadFileToServer(img, brand));
       return cache.get(img)!;
     }
 
-    // fallback: keep as-is
     return img;
   });
 

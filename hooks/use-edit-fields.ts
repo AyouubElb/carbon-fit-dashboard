@@ -1,48 +1,68 @@
 // hooks/useEditedFields.ts
 import { useCallback, useRef, useState } from "react";
 
-export function useEditedFields<T extends Record<string, any>>(
-  initial?: T | null
-) {
+/**
+ * Track edited fields on an object and return only changed fields.
+ * Accepts any object-like T (no index signature required).
+ */
+export function useEditedFields<T extends object>(initial?: T | null) {
+  type Key = Extract<keyof T, string>;
+
   const initialRef = useRef<T | null>(initial ?? null);
   const [current, setCurrent] = useState<T | null>(initial ?? null);
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
 
-  // call this when the initial object changes (e.g., opening modal with new row)
   const reset = useCallback((next?: T | null) => {
     initialRef.current = next ?? null;
     setCurrent(next ?? null);
     setDirtyKeys(new Set());
   }, []);
 
-  const onChange = useCallback((key: keyof T, value: any) => {
+  // onChange accepts a key (one of T's keys) and a value of that property's type
+  const onChange = useCallback((key: Key, value: T[Key]) => {
     setCurrent((prev) => {
-      const next = { ...(prev ?? {}), [key as string]: value } as T;
+      const next = { ...(prev ?? {}) } as T;
+      // assign using index signature cast
+      (next as Record<string, unknown>)[key] = value as unknown;
+
       // compare with initialRef to see if key is dirty
       const initVal = initialRef.current
-        ? (initialRef.current as any)[key as string]
+        ? (initialRef.current as Record<string, unknown>)[key]
         : undefined;
+
+      const bothNumbers =
+        typeof initVal === "number" && typeof value === "number";
+
       const isDirty = !(
-        initVal === value ||
-        (Number.isNaN(initVal) && Number.isNaN(value))
+        initVal === (value as unknown) ||
+        (bothNumbers &&
+          Number.isNaN(initVal as number) &&
+          Number.isNaN(value as number))
       );
+
       setDirtyKeys((s) => {
         const copy = new Set(s);
-        if (isDirty) copy.add(key as string);
-        else copy.delete(key as string);
+        if (isDirty) copy.add(key);
+        else copy.delete(key);
         return copy;
       });
+
       return next;
     });
   }, []);
 
-  // returns only changed fields (shallow)
-  const getChanges = useCallback(() => {
+  // returns only changed fields (shallow) or null if nothing changed
+  const getChanges = useCallback((): Partial<T> | null => {
     if (!current || !initialRef.current) return current ?? null;
+
     const out: Partial<T> = {};
+    const currRec = current as Record<string, unknown>;
+
     dirtyKeys.forEach((k) => {
-      (out as any)[k] = (current as any)[k];
+      const kk = k as Key;
+      (out as Record<string, unknown>)[kk] = currRec[kk];
     });
+
     return Object.keys(out).length ? out : null;
   }, [current, dirtyKeys]);
 

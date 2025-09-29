@@ -33,14 +33,12 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
   editingOrder,
   setEditingOrder,
 }) => {
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const {
     current: local,
     reset,
     onChange,
     getChanges,
-    isDirty,
   } = useEditedFields<Order>(editingOrder);
 
   // reset local state when editingOrder changes / modal opens
@@ -49,7 +47,6 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
   }, [editingOrder, reset]);
 
   const handleSaveEdit = async () => {
-    setError(null);
     if (!editingOrder) return;
 
     const updates = getChanges();
@@ -65,9 +62,9 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
       await editOrder(editingOrder.id, updates);
       setIsEditModalOpen(false);
       setEditingOrder(null);
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to save");
-      console.log(err?.message ?? "Failed to save");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(message);
     } finally {
       setLoading(false);
     }

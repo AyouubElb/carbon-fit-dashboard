@@ -1,5 +1,10 @@
 import z from "zod/v3";
 
+export interface Brand {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   title: string;

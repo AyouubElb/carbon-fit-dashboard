@@ -42,13 +42,6 @@ const ProductForm = () => {
     return SUPABASE_IMAGE_URL + img; // stored path -> build public url
   };
 
-  const removeImage = (index: number) => {
-    setValue(
-      "images",
-      images.filter((_, i) => i !== index)
-    );
-  };
-
   const getAvailableSizesForSelect = () => {
     const selectedSizes: string[] = methods.getValues("sizes") || [];
     return AVAILABLE_SIZES.filter((size) => !selectedSizes.includes(size));
@@ -363,7 +356,6 @@ const ProductForm = () => {
                         <SelectItem value="bmw">BMW</SelectItem>
                         <SelectItem value="mercedes">Mercedes</SelectItem>
                         <SelectItem value="audi">Audi</SelectItem>
-                        <SelectItem value="ferrari">Ferrari</SelectItem>
                         <SelectItem value="porsche">Porsche</SelectItem>
                       </SelectContent>
                     </Select>

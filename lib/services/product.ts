@@ -1,5 +1,4 @@
 import { supabase } from "../supabase/client";
-import { createClient } from "@supabase/supabase-js";
 import { ProductPayload } from "../types";
 import { supabaseAdmin } from "../supabase/server";
 
@@ -171,43 +170,39 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
 // server side: updateProduct(id, payload, oldImages?)
 export const updateProduct = async (id: string, payload: ProductPayload) => {
-  if (!id) throw new Error("Missing product id");
+  try {
+    if (!id) throw new Error("Missing product id");
 
-  const updatePayload: Partial<ProductPayload> = {
-    title: payload.title,
-    description: payload.description ?? null,
-    price: payload.price,
-    originalPrice: payload.originalPrice,
-    onSale: payload.onSale ?? false,
-    stock: payload.stock ?? 0,
-    sizes: payload.sizes ?? [],
-    brand_id: payload.brand_id,
-    images: payload.images ?? [],
-  };
+    const updatePayload: Partial<ProductPayload> = {
+      title: payload.title,
+      description: payload.description ?? null,
+      price: payload.price,
+      originalPrice: payload.originalPrice,
+      onSale: payload.onSale ?? false,
+      stock: payload.stock ?? 0,
+      sizes: payload.sizes ?? [],
+      brand_id: payload.brand_id,
+      images: payload.images ?? [],
+    };
 
-  // Do update and SELECT (no .single()) so we can inspect return
-  const debug = await supabaseAdmin
-    .from("products")
-    .update(updatePayload)
-    .eq("id", id)
-    .select(); // returns { data: [...], error: {...} }
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .update(updatePayload)
+      .eq("id", id)
+      .select();
 
-  console.log("update debug result:", debug);
+    if (error) {
+      console.error("Error updating product:", error.message);
+      throw new Error(error.message);
+    }
 
-  if (debug.error) {
-    // real DB error (column does not exist, etc.)
-    throw new Error(debug.error.message);
+    return data ?? null;
+  } catch (err: unknown) {
+    console.error("Update product error:", err);
+    throw err instanceof Error
+      ? err
+      : new Error("Unknown error updating product");
   }
-
-  if (!debug.data || debug.data.length === 0) {
-    // Most likely RLS blocked the update or the row was filtered out
-    throw new Error(
-      "Update returned no rows. Possible causes: RLS policy blocked the update for this actor, or the row does not exist."
-    );
-  }
-
-  // Return the first (and expected only) updated row
-  return debug.data[0];
 };
 
 export const createProduct = async (payload: ProductPayload) => {
@@ -216,9 +211,6 @@ export const createProduct = async (payload: ProductPayload) => {
     let brand_id = payload.brand_id ?? null;
 
     if (!brand_id && brandName) {
-      // Option A: use upsert with onConflict (recommended) — requires a UNIQUE constraint on brands.name
-      // This performs insert-or-no-op and returns the row (avoid race conditions)
-
       const { data: brandUpserted, error: upsertError } = await supabaseAdmin
         .from("brands")
         .upsert({ name: brandName }, { onConflict: "name" })
@@ -226,69 +218,15 @@ export const createProduct = async (payload: ProductPayload) => {
         .maybeSingle();
 
       if (upsertError) {
-        // If upsert is not supported or fails for some reason, fall back to find-or-insert below
         console.warn(
           "brands upsert failed, will fallback to find/insert:",
           upsertError.message
         );
       } else if (brandUpserted) {
-        brand_id = (brandUpserted as any).id;
+        brand_id = brandUpserted.id;
       }
     }
 
-    // 1b) Fallback: try to find brand by name (case-insensitive) and insert if not found
-    /*if (!brand_id && brandName) {
-      // Try to find existing brand
-      const { data: foundBrands, error: findError } = await supabaseAdmin
-        .from("brands")
-        // .ilike provides case-insensitive pattern matching; use exact match pattern
-        .select("id")
-        .ilike("name", brandName)
-        .limit(1);
-
-      if (findError) {
-        console.error("Error finding brand:", findError.message);
-        throw new Error("Failed to lookup brand");
-      }
-
-      if (foundBrands && foundBrands.length > 0) {
-        brand_id = foundBrands[0].id;
-      } else {
-        // Not found -> create brand
-        const { data: insertedBrand, error: insertError } = await supabaseAdmin
-          .from("brands")
-          .insert({ name: brandName })
-          .select("id")
-          .limit(1)
-          .maybeSingle();
-
-        if (insertError) {
-          // If duplicate unique constraint happens due to race, re-query to get the id
-          console.warn(
-            "Insert brand error (attempting re-query):",
-            insertError.message
-          );
-          const { data: reQuery, error: reQueryError } = await supabaseAdmin
-            .from("brands")
-            .select("id")
-            .ilike("name", brandName)
-            .limit(1);
-
-          if (reQueryError || !reQuery || reQuery.length === 0) {
-            console.error(
-              "Failed to resolve brand after insert failure:",
-              reQueryError?.message ?? insertError.message
-            );
-            throw new Error("Failed to create or resolve brand");
-          }
-          brand_id = reQuery[0].id;
-        } else if (insertedBrand) {
-          brand_id = (insertedBrand as any).id;
-        }
-      }
-    }*/
-
-    // 2) Build product payload with resolved brand_id
     const newProductPayload: Partial<ProductPayload> = {
       title: payload.title,
       description: payload.description ?? null,
@@ -297,7 +235,7 @@ export const createProduct = async (payload: ProductPayload) => {
       onSale: payload.onSale ?? false,
       stock: payload.stock ?? 0,
       sizes: payload.sizes ?? [],
-      brand_id: brand_id ?? null, // set resolved brand id (or null)
+      brand_id: brand_id ?? null,
       images: payload.images ?? [],
     };
 
@@ -305,7 +243,7 @@ export const createProduct = async (payload: ProductPayload) => {
     const { data, error } = await supabaseAdmin
       .from("products")
       .insert(newProductPayload)
-      .select(); // return the inserted rows
+      .select();
 
     if (error) {
       console.error("Error inserting product:", error.message);
@@ -315,7 +253,6 @@ export const createProduct = async (payload: ProductPayload) => {
     return data ?? null;
   } catch (err: unknown) {
     console.error("createProduct error:", err);
-    // rethrow or return null depending on how you want to handle it
     throw err instanceof Error
       ? err
       : new Error("Unknown error creating product");

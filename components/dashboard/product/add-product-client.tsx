@@ -4,7 +4,6 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Product,
@@ -24,7 +23,6 @@ const AddProductClient = () => {
   //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
   //const product = use(productPromise);
-  const [isLoading, setIsLoading] = useState(false);
   const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: getInitialFormData(null),
@@ -46,7 +44,6 @@ const AddProductClient = () => {
   }
 
   const onSubmit = async (data: ProductFormData) => {
-    setIsLoading(true);
     console.log("test");
     try {
       const urlPageType = searchParams.get("type"); // "add" | "edit" | null
@@ -98,7 +95,6 @@ const AddProductClient = () => {
           duration: 3000,
           position: "top-right",
         });
-        setIsLoading(false);
         return;
       }
 
@@ -126,8 +122,6 @@ const AddProductClient = () => {
           position: "top-right",
         }
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 

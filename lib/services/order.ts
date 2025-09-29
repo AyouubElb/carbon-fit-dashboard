@@ -1,5 +1,5 @@
 import { supabase } from "../supabase/client";
-import { Profile } from "../types";
+import { Order, Profile } from "../types";
 
 export async function getOrders(profile?: Profile | null) {
   if (profile && profile.is_admin === false) {
@@ -17,7 +17,7 @@ export async function getOrders(profile?: Profile | null) {
 
 export async function editOrder(
   id: string,
-  updates: Record<string, any>,
+  updates: Partial<Order>,
   profile?: Profile | null
 ) {
   // client-side guard (UX only)

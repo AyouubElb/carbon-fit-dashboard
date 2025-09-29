@@ -1,4 +1,4 @@
-"use client";
+/*"use client";
 
 import React, { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -81,7 +81,6 @@ export default function TiptapEditor({
 
   return (
     <div className={`rounded-xl border p-3 ${className}`}>
-      {/* toolbar */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <button
           type="button"
@@ -151,7 +150,6 @@ export default function TiptapEditor({
           Image
         </button>
 
-        {/* heading select */}
         <select
           value={
             editor.isActive("heading", { level: 1 })
@@ -178,7 +176,6 @@ export default function TiptapEditor({
           <option value="h4">Heading 4</option>
         </select>
 
-        {/* color picker */}
         <input
           type="color"
           onChange={(e) => pickColor(e.target.value)}
@@ -194,7 +191,6 @@ export default function TiptapEditor({
         </button>
       </div>
 
-      {/* editor area */}
       {!isHtmlMode ? (
         <EditorContent editor={editor} className="min-h-[140px] outline-none" />
       ) : (
@@ -210,3 +206,4 @@ export default function TiptapEditor({
     </div>
   );
 }
+*/

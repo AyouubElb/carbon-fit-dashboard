@@ -141,7 +141,7 @@ export function ProductsGrid({
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="text-sm font-medium text-gray-700">
-                    {product.rating || 4.5}
+                    {4.5}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     (24 avis)

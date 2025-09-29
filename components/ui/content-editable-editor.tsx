@@ -67,7 +67,7 @@ export default function ContentEditableEditor({
     );
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = () => {
     // allow paste then sanitize
     setTimeout(handleInput, 0);
   };
@@ -81,9 +81,12 @@ export default function ContentEditableEditor({
       suppressContentEditableWarning
       role="textbox"
       aria-multiline="true"
-      className={`min-h-[120px] rounded-xl border p-3 outline-none ${className}`}
+      className={`min-h-[120px] rounded-xl border p-3 outline-none relative ${className} ${
+        isEmpty
+          ? "before:content-[attr(data-placeholder)] before:text-gray-400 before:pointer-events-none before:absolute before:left-3 before:top-3"
+          : ""
+      }`}
       data-placeholder={placeholder}
-      // IMPORTANT: do NOT use pre-wrap; let the browser layout normally
       style={{ whiteSpace: "normal" }}
     />
   );

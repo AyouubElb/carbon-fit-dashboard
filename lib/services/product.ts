@@ -3,6 +3,7 @@ import { ProductPayload } from "../types";
 import { supabaseAdmin } from "../supabase/server";
 
 interface Brand {
+  id: string;
   name: string;
 }
 
@@ -53,7 +54,7 @@ export async function getProducts(): Promise<Product[]> {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, title, price, originalPrice, onSale, images, description, brands(name), sizes, stock, stockStatus, created_at"
+      "id, title, price, originalPrice, onSale, images, description, brands(id, name), sizes, stock, stockStatus, created_at"
     );
 
   if (error) throw error;
@@ -94,7 +95,10 @@ export async function getProducts(): Promise<Product[]> {
       onSale: Boolean(row.onSale),
       images: Array.isArray(row.images) ? row.images.map(String) : [],
       description: String(row.description ?? ""),
-      brands: { name: String((rawBrand?.name ?? "") as unknown) },
+      brands: {
+        id: String(rawBrand?.id ?? ""),
+        name: String(rawBrand?.name ?? ""),
+      },
       sizes: Array.isArray(row.sizes) ? row.sizes.map(String) : [],
       stock: stockNum,
       stockStatus: status,

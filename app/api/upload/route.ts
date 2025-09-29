@@ -59,10 +59,10 @@ export async function POST(req: Request) {
 
     const filename = `${bucket}/${pathInsideBucket}`; // store this in DB
     return NextResponse.json({ filename });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Upload route error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Upload failed" },
+      { error: err instanceof Error ? err.message : "Upload failed" },
       { status: 500 }
     );
   }

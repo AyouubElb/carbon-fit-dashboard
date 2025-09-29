@@ -7,14 +7,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ViewOrderModal from "./view-order-modal";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Edit,
-  Eye,
-  Package,
-  Truck,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Eye } from "lucide-react";
 import EditOrderModal from "./edit-order-modal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

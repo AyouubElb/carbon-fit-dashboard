@@ -93,14 +93,12 @@ const EditProductClient = ({ productPromise }: EditProductClientProps) => {
     try {
       const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
-      // 1) Process/upload images and keep order
       const finalImages = await processImagesServerSide(
         data.images ?? [],
         data.brands?.name ?? ""
       );
       console.log("product:", product);
 
-      // 2) Build payload using finalImages
       const payload: ProductPayload = {
         id: product?.id,
         title: data.title,
@@ -114,16 +112,9 @@ const EditProductClient = ({ productPromise }: EditProductClientProps) => {
         images: finalImages,
       };
 
-      // Attach id only when updating (pageType === "edit" AND product exists)
-      /*if (pageType === "edit" && product?.id) {
-        payload.id = product.id;
-      }*/
-
-      // 3) Choose HTTP method based on pageType
       const method = urlPageType === "edit" ? "PUT" : "POST";
       console.log("method:", urlPageType, method);
 
-      // 4) Call API
       const res = await fetch("/api/product", {
         method,
         headers: { "Content-Type": "application/json" },

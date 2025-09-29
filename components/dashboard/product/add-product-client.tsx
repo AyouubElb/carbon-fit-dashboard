@@ -4,7 +4,7 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Product,
   ProductFormData,
@@ -17,10 +17,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { processImagesServerSide } from "@/lib/images";
 import { toast } from "sonner";
 
-const AddProductClient = () => {
+type Props = { pageType?: string | null };
+
+const AddProductClient: React.FC<Props> = ({ pageType }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
   //const product = use(productPromise);
   const methods = useForm<ProductFormData>({
@@ -44,17 +44,14 @@ const AddProductClient = () => {
   }
 
   const onSubmit = async (data: ProductFormData) => {
-    console.log("test");
     try {
-      const urlPageType = searchParams.get("type"); // "add" | "edit" | null
+      //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
-      // 1) Process/upload images and keep order
       const finalImages = await processImagesServerSide(
         data.images ?? [],
         data.brands?.name ?? ""
       );
 
-      // 2) Build payload using finalImages
       const payload: ProductPayload = {
         title: data.title,
         description: data.description,
@@ -68,16 +65,8 @@ const AddProductClient = () => {
         images: finalImages,
       };
 
-      // Attach id only when updating (pageType === "edit" AND product exists)
-      /*if (pageType === "edit" && product?.id) {
-            payload.id = product.id;
-          }*/
+      const method = pageType === "edit" ? "PUT" : "POST";
 
-      // 3) Choose HTTP method based on pageType
-      const method = urlPageType === "edit" ? "PUT" : "POST";
-      console.log("method:", urlPageType, method);
-
-      // 4) Call API
       const res = await fetch("/api/product", {
         method,
         headers: { "Content-Type": "application/json" },

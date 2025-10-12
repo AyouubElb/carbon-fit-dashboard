@@ -99,10 +99,8 @@ export interface OrderItem {
 export interface Order {
   id: string;
   full_name: string;
-  email: string;
   address: string;
   city: string;
-  postal_code: string;
   phone: string;
   notes?: string;
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";

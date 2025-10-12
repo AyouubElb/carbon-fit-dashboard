@@ -100,18 +100,6 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  className="text-gray-600"
-                  value={local?.email ?? ""}
-                  onChange={(e) => onChange("email", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="phone" className="text-gray-700">
                   Téléphone
                 </Label>

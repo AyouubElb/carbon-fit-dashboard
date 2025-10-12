@@ -120,9 +120,7 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
       const matchesSearch =
         searchTerm === "" ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.email.toLowerCase().includes(searchTerm.toLowerCase());
-
+        order.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
         statusFilter === "All" || order.status === statusFilter;
 
@@ -231,7 +229,6 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                     <td className="py-4 px-4">
                       <div>
                         <div className="font-medium">{order.full_name}</div>
-                        <div className="text-sm">{order.email}</div>
                       </div>
                     </td>
                     <td className="py-4 px-4">

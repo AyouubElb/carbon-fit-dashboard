@@ -2,6 +2,7 @@ import type { Product } from "@/lib/types";
 import { getProductById } from "@/lib/services/product";
 import EditProductClient from "@/components/dashboard/product/edit-product-client";
 import { Suspense } from "react";
+import Loading from "@/components/ui/loading";
 
 export default async function EditProductPage({
   params,
@@ -20,9 +21,5 @@ export default async function EditProductPage({
 }
 
 function loadingData() {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <p className="text-lg text-gray-500">Loading ...</p>
-    </div>
-  );
+  return <Loading />;
 }

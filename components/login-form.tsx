@@ -62,7 +62,7 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="!shadow-md">
+      <Card className="!shadow-md !bg-white">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
@@ -106,7 +106,7 @@ export function LoginForm({
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
+            {/*  <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
               <Link
                 href="/auth/sign-up"
@@ -114,7 +114,7 @@ export function LoginForm({
               >
                 Sign up
               </Link>
-            </div>
+            </div>*/}
           </form>
         </CardContent>
       </Card>

@@ -45,12 +45,6 @@ const ViewOrderModal: React.FC<ViewOrderProps> = ({
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  Email
-                </Label>
-                <p className="text-sm text-gray-600">{selectedOrder.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
                   Téléphone
                 </Label>
                 <p className="text-sm text-gray-600">{selectedOrder.phone}</p>

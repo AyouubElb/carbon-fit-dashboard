@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Header />
 
           {/* Page content */}
-          <main className="bg-gray-50 p-6 min-w-0">{children}</main>
+          <main className="h-full bg-gray-50 p-6 min-w-0">{children}</main>
         </div>
       </SidebarProvider>
     </div>

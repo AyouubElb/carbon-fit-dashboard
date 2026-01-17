@@ -15,10 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEditedFields } from "@/hooks/use-edit-fields";
-import { editOrder } from "@/lib/services/order";
+import { useUpdateOrder } from "@/hooks/useOrders";
 import { Order } from "@/lib/types";
 import { CheckCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
 interface EditOrderModalProps {
   isEditModalOpen: boolean;
@@ -33,7 +33,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
   editingOrder,
   setEditingOrder,
 }) => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const { mutate: updateOrder, isPending } = useUpdateOrder();
   const {
     current: local,
     reset,
@@ -57,17 +57,15 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
       return;
     }
 
-    try {
-      setLoading(true);
-      await editOrder(editingOrder.id, updates);
-      setIsEditModalOpen(false);
-      setEditingOrder(null);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.log(message);
-    } finally {
-      setLoading(false);
-    }
+    updateOrder(
+      { id: editingOrder.id, updates },
+      {
+        onSuccess: () => {
+          setIsEditModalOpen(false);
+          setEditingOrder(null);
+        },
+      }
+    );
   };
 
   const handleCancelEdit = () => {
@@ -155,8 +153,9 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({
               <Button
                 className="text-white !bg-indigo-700 shadow-sm hover:!bg-indigo-600"
                 onClick={handleSaveEdit}
+                disabled={isPending}
               >
-                {loading ? (
+                {isPending ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
                     Submitting...

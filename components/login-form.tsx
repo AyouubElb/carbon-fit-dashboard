@@ -13,50 +13,56 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { LoginFormData, loginSchema } from "@/lib/validations/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
-
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) throw signInError;
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
 
-      const session = data.session;
-      if (session) {
-        // send tokens to server to set HttpOnly cookies
-        await fetch("/api/auth/set-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at,
-          }),
-          credentials: "same-origin",
-        });
+      if (signInError) {
+        // Map Supabase errors to user-friendly messages
+        let errorMessage = "Unable to sign in. Please try again.";
+
+        if (signInError.message.includes("Invalid login credentials")) {
+          errorMessage = "Invalid email or password";
+        } else if (signInError.message.includes("Email not confirmed")) {
+          errorMessage = "Please verify your email before logging in";
+        } else if (signInError.message.includes("Too many requests")) {
+          errorMessage = "Too many login attempts. Please try again later.";
+        }
+
+        throw new Error(errorMessage);
       }
 
-      router.push("/dashboard");
+      // Hard navigation ensures middleware processes cookies properly
+      window.location.href = "/dashboard";
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred";
+
+      setError("root", {
+        type: "manual",
+        message: errorMessage,
+      });
     }
   };
 
@@ -70,7 +76,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -78,10 +84,13 @@ export function LoginForm({
                   id="email"
                   type="email"
                   placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register("email")}
+                  aria-invalid={!!errors.email}
+                  disabled={isSubmitting}
                 />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
@@ -96,14 +105,21 @@ export function LoginForm({
                 <Input
                   id="password"
                   type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register("password")}
+                  aria-invalid={!!errors.password}
+                  disabled={isSubmitting}
                 />
+                {errors.password && (
+                  <p className="text-sm text-red-500">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+              {errors.root && (
+                <p className="text-sm text-red-500">{errors.root.message}</p>
+              )}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Logging in..." : "Login"}
               </Button>
             </div>
             {/*  <div className="mt-4 text-center text-sm">

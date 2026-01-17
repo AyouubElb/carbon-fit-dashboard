@@ -15,6 +15,7 @@ import { SUPABASE_IMAGE_URL } from "@/lib/supabase/client";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { Controller, useFormContext } from "react-hook-form";
+import { useBrands } from "@/hooks/useBrands";
 
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
 
@@ -22,7 +23,7 @@ const ProductForm = () => {
   const methods = useFormContext(); // gets methods from FormProvider
   const { watch, setValue, control } = methods;
   const images = watch("images") ?? [];
-  //console.log("fields:", methods.getValues());
+  const { data: brands, isLoading: brandsLoading } = useBrands();
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -341,31 +342,53 @@ const ProductForm = () => {
                 Product Brand
               </Label>
               <Controller
-                name="brands.name"
+                name="brands"
                 control={methods.control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={(v) => field.onChange(v)}
-                    >
-                      <SelectTrigger className="border-gray-200 rounded-xl">
-                        <SelectValue placeholder="Select brand" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-gray-200">
-                        <SelectItem value="bmw">BMW</SelectItem>
-                        <SelectItem value="mercedes">Mercedes</SelectItem>
-                        <SelectItem value="audi">Audi</SelectItem>
-                        <SelectItem value="porsche">Porsche</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.error && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </>
-                )}
+                render={({ field, fieldState }) => {
+                  const selectedBrandId = field.value?.id;
+
+                  return (
+                    <>
+                      <Select
+                        value={selectedBrandId ?? ""}
+                        onValueChange={(brandId) => {
+                          const selectedBrand = brands?.find(
+                            (b) => b.id === brandId
+                          );
+                          if (selectedBrand) {
+                            field.onChange({
+                              id: selectedBrand.id,
+                              name: selectedBrand.name,
+                            });
+                          }
+                        }}
+                        disabled={brandsLoading}
+                      >
+                        <SelectTrigger className="border-gray-200 rounded-xl">
+                          <SelectValue
+                            placeholder={
+                              brandsLoading
+                                ? "Loading brands..."
+                                : "Select brand"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-gray-200">
+                          {brands?.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id}>
+                              {brand.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.error && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {fieldState.error.message}
+                        </p>
+                      )}
+                    </>
+                  );
+                }}
               />
             </div>
           </div>

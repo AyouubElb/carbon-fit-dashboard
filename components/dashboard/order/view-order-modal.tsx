@@ -21,6 +21,7 @@ const ViewOrderModal: React.FC<ViewOrderProps> = ({
   selectedOrder,
   getStatusBadge,
 }) => {
+  console.log("Selected Order:", selectedOrder);
   return (
     <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
       <DialogContent className="bg-white max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -56,7 +57,7 @@ const ViewOrderModal: React.FC<ViewOrderProps> = ({
                 <p className="text-sm text-gray-600">
                   {selectedOrder?.created_at
                     ? new Date(selectedOrder.created_at).toLocaleDateString(
-                        "fr-FR"
+                        "fr-FR",
                       )
                     : "—"}
                 </p>
@@ -100,15 +101,28 @@ const ViewOrderModal: React.FC<ViewOrderProps> = ({
                           {orderItem.product_title}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Taille: {orderItem.size} • Quantité:{" "}
+                          <span className="font-medium">Taille: </span>{" "}
+                          {orderItem.size} •
+                          <span className="font-medium"> Quantité: </span>{" "}
                           {orderItem.quantity}
                         </p>
+                        {orderItem.color && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-gray-600 text-sm font-medium">
+                              Couleur:
+                            </span>
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: orderItem.color }}
+                            ></div>
+                          </div>
+                        )}
                       </div>
                       <p className="font-medium text-gray-700">
                         {orderItem.product_price}
                       </p>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>

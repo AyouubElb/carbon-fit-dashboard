@@ -59,10 +59,9 @@ export const productSchema = z.object({
   }),
   brands: z.object({
     id: z
-      .string()
-      .uuid({ message: "Brand id must be a valid UUID" })
-      .optional()
-      .nullable(),
+      .string({ required_error: "Brand is required" })
+      .uuid({ message: "Please select a valid brand" })
+      .min(1, { message: "Brand is required" }),
     name: z
       .string()
       .min(2, { message: "Brand name must be at least 2 characters" }),
@@ -107,4 +106,5 @@ export interface Order {
   order_items: OrderItem[];
   total: number;
   created_at?: string;
+  synced_to_sheets?: boolean;
 }

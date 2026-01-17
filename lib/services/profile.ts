@@ -6,16 +6,36 @@ export async function fetchProfileById(id: string) {
     .from("profiles")
     .select("*")
     .eq("id", id)
-    .single();
-  if (error) throw error;
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching profile by ID:", error);
+    throw error;
+  }
+
   return data;
 }
 
 /** Fetch the current logged-in user's profile (returns null if no user) */
 export async function fetchCurrentProfile() {
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr) throw userErr;
-  const user = userData?.user;
-  if (!user) return null;
-  return fetchProfileById(user.id);
+  try {
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+
+    if (userErr) {
+      console.error("Error fetching user:", userErr);
+      throw userErr;
+    }
+
+    const user = userData?.user;
+    if (!user) {
+      console.log("No authenticated user found");
+      return null;
+    }
+
+    return await fetchProfileById(user.id);
+  } catch (error) {
+    console.error("Error in fetchCurrentProfile:", error);
+    // Re-throw so AuthProvider can handle it
+    throw error;
+  }
 }

@@ -1,9 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, useEffect } from "react";
-import { getOrders } from "@/lib/services/order";
-import { useAuth } from "@/context/AuthProvider";
+import { useState } from "react";
 import { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ViewOrderModal from "./view-order-modal";
@@ -11,6 +9,8 @@ import { ChevronLeft, ChevronRight, Edit, Eye } from "lucide-react";
 import EditOrderModal from "./edit-order-modal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useOrders } from "@/hooks/useOrders";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 interface OrdersTableProps {
   searchTerm: string;
@@ -49,6 +49,9 @@ function OrdersTableSkeleton() {
                   Total
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-card-foreground">
+                  Synchronisé
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-card-foreground">
                   Actions
                 </th>
               </tr>
@@ -78,6 +81,9 @@ function OrdersTableSkeleton() {
                     <Skeleton className="bg-gray-300 h-4 w-12" />
                   </td>
                   <td className="py-4 px-4">
+                    <Skeleton className="bg-gray-300 h-4 w-8" />
+                  </td>
+                  <td className="py-4 px-4">
                     <div className="flex gap-2">
                       <Skeleton className="bg-gray-300 h-8 w-8" />
                       <Skeleton className="bg-gray-300 h-8 w-8" />
@@ -104,17 +110,35 @@ function OrdersTableSkeleton() {
 }
 
 export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
-  const { profile, loading: profileLoading } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 5;
 
+  // Debounce search to prevent API call on every keystroke
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
+  const ordersPerPage = 10;
+
+  const { data, isLoading, error } = useOrders({
+    page: currentPage,
+    pageSize: ordersPerPage,
+    status: statusFilter,
+    search: debouncedSearch,
+  });
+
+  if (isLoading) return <OrdersTableSkeleton />;
+  if (error) return <div className="text-red-500">Error: {error.message}</div>;
+
+  const { orders, total } = data || { orders: [], total: 0 };
+  const totalPages = Math.ceil(total / ordersPerPage);
+
+  // Calculate display range
+  const startIndex = (currentPage - 1) * ordersPerPage;
+  const endIndex = Math.min(startIndex + ordersPerPage, total);
+
+  /*
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch =
@@ -161,6 +185,7 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
     startIndex,
     startIndex + ordersPerPage
   );
+*/
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -189,9 +214,9 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
     setIsEditModalOpen(true);
   };
 
-  if (isLoading || profileLoading) {
+  /*if (isLoading || profileLoading) {
     return <OrdersTableSkeleton />;
-  }
+  }*/
 
   return (
     <>
@@ -210,11 +235,14 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                   <th className="text-left py-3 px-4 font-medium">Statut</th>
                   <th className="text-left py-3 px-4 font-medium">Articles</th>
                   <th className="text-left py-3 px-4 font-medium">Total</th>
+                  <th className="text-left py-3 px-4 font-medium">
+                    Synchronisé A Sheets
+                  </th>
                   <th className="text-left py-3 px-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedOrders.map((order) => (
+                {orders.map((order) => (
                   <tr
                     key={order.id}
                     className="text-gray-600 border-b border-gray-200 hover:bg-gray-50/50"
@@ -248,6 +276,11 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                         {order.total}
                       </div>
                     </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="text-lg">
+                        {order.synced_to_sheets ? "✅" : "❌"}
+                      </span>
+                    </td>
                     <td className="py-4 px-4">
                       <div className="flex gap-2">
                         <Button
@@ -272,43 +305,42 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                 ))}
               </tbody>
             </table>
-          </div>
-
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">
-              Affichage de {startIndex + 1} à{" "}
-              {Math.min(startIndex + ordersPerPage, filteredOrders.length)} sur{" "}
-              {filteredOrders.length} commandes
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="!text-gray-600 !border !border-gray-200 !bg-white !shadow-sm hover:!bg-[#0089E9] hover:!text-white"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Précédent
-              </Button>
-              <span className="text-sm text-gray-600">
-                Page {currentPage} sur {totalPages}
-              </span>
-              <Button
-                size="sm"
-                className="!text-gray-600 !border !border-gray-200 !bg-white !shadow-sm hover:!bg-[#0089E9] hover:!text-white"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Suivant
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-600">
+                Affichage de {total === 0 ? 0 : startIndex + 1} à {endIndex} sur{" "}
+                {total} commande{total > 1 ? "s" : ""}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="!text-gray-600 !border !border-gray-200 !bg-white !shadow-sm hover:!bg-[#0089E9] hover:!text-white"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1 || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} sur {totalPages || 1}
+                </span>
+                <Button
+                  size="sm"
+                  className="!text-gray-600 !border !border-gray-200 !bg-white !shadow-sm hover:!bg-[#0089E9] hover:!text-white"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages || isLoading}
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
       <ViewOrderModal
         isViewModalOpen={isViewModalOpen}
         setIsViewModalOpen={() => setIsViewModalOpen(false)}

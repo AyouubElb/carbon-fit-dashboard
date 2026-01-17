@@ -4,7 +4,6 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Product,
@@ -16,53 +15,22 @@ import ProductForm from "./product-form";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { processImagesServerSide } from "@/lib/images";
-import { toast } from "sonner";
+import { useCreateProduct, useUpdateProduct } from "@/hooks/useProducts";
 
-interface EditProductClientProps {
-  productPromise: Promise<Product | null> | Product | null;
-}
-
-const EditProductClient = ({ productPromise }: EditProductClientProps) => {
+const EditProductClient = ({ product }: { product: Product | null }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  //const urlPageType = searchParams.get("type"); // "add" | "edit" | null
+  const urlPageType = searchParams.get("type"); // "add" | "edit" | null
 
-  //const product = use(productPromise);
-  const [isLoading, setIsLoading] = useState(false);
-  const [product, setProduct] = useState<Product | null>(null);
+  // Mutation hooks
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+
   const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: getInitialFormData(null),
+    defaultValues: getInitialFormData(product),
     mode: "onChange",
   });
-
-  useEffect(() => {
-    let mounted = true;
-    setIsLoading(true);
-    const normalized = Promise.resolve(productPromise);
-
-    normalized
-      .then((p) => {
-        if (!mounted) return;
-        if (p) {
-          setProduct(p);
-          methods.reset(getInitialFormData(p));
-        } else {
-          setProduct(null);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load product", err);
-        if (mounted) {
-          setProduct(null);
-        }
-      });
-
-    return () => {
-      mounted = false;
-      setIsLoading(false);
-    };
-  }, [productPromise]);
 
   function getInitialFormData(p?: Product | null): ProductFormData {
     return {
@@ -73,13 +41,13 @@ const EditProductClient = ({ productPromise }: EditProductClientProps) => {
       description: p?.description ?? "",
       stock: p?.stock ?? 0,
       sizes: p?.sizes ?? [],
-      brands: p?.brands ?? { id: null, name: "" },
+      brands: p?.brands ?? { id: "", name: "" },
       images: p?.images ?? [],
     };
   }
 
-  // If loaded but no product found
-  if (!product && !isLoading) {
+  // If loaded but no product found (only for edit mode)
+  if (urlPageType === "edit" && !product) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-lg text-gray-500">Produit non trouvé</p>
@@ -87,95 +55,54 @@ const EditProductClient = ({ productPromise }: EditProductClientProps) => {
     );
   }
 
+  //const isLoading = createProduct.isPending || updateProduct.isPending;
+
   const onSubmit = async (data: ProductFormData) => {
-    setIsLoading(true);
-
     try {
-      const urlPageType = searchParams.get("type"); // "add" | "edit" | null
-
       const finalImages = await processImagesServerSide(
         data.images ?? [],
         data.brands?.name ?? ""
       );
-      console.log("product:", product);
 
       const payload: ProductPayload = {
-        id: product?.id,
         title: data.title,
         description: data.description,
         price: data.price,
         originalPrice: data.originalPrice,
-        onSale: data.onSale || true,
+        onSale: data.onSale || false,
         stock: data.stock,
         sizes: data.sizes ?? [],
-        brand_id: product?.brands?.id ?? "",
+        brand_id: data.brands?.id || null,
         images: finalImages,
       };
 
-      const method = urlPageType === "edit" ? "PUT" : "POST";
-      console.log("method:", urlPageType, method);
-
-      const res = await fetch("/api/product", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const { error } = await res
-          .json()
-          .catch(() => ({ error: "Unknown error" }));
-        console.error("Product API error:", error);
-        toast.error(error?.message ?? "Failed saving product", {
-          className: "bg-white dark:bg-zinc-900",
-          description: "Save product failed. Please try again",
-          duration: 3000,
-          position: "top-right",
+      if (urlPageType === "edit" && product?.id) {
+        // Update existing product
+        await updateProduct.mutateAsync({
+          id: product.id,
+          payload,
         });
-        setIsLoading(false);
-        return;
+      } else {
+        // Create new product
+        await createProduct.mutateAsync(payload);
       }
 
-      const result = await res.json();
-      console.log("Product response:", result);
-
-      toast.success(
-        urlPageType === "edit"
-          ? "Product updated successfully!"
-          : "Product created successfully!",
-        {
-          className: "bg-white",
-          description:
-            urlPageType === "edit"
-              ? "Product updated successfully!"
-              : "Product created successfully!",
-          duration: 2000,
-          position: "top-right",
-        }
-      );
-
-      //methods.reset(getInitialFormData(result));
+      // Navigate to products list on success
       router.push("/dashboard/products");
     } catch (err: unknown) {
-      console.error("Network error:", err);
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Network error while saving product",
-        {
-          className: "bg-white dark:bg-zinc-900",
-          duration: 3000,
-          position: "top-right",
-        }
-      );
-    } finally {
-      setIsLoading(false);
+      // Error handling is done by mutation hooks
+      console.error("Save error:", err);
     }
   };
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-8">
+      <form
+        onSubmit={(e) => {
+          methods.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-8"
+      >
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
@@ -206,7 +133,6 @@ const EditProductClient = ({ productPromise }: EditProductClientProps) => {
               <Button
                 type="submit"
                 disabled={methods.formState.isSubmitting}
-                onClick={methods.handleSubmit(onSubmit)}
                 className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 style={{ fontFamily: "Poppins, sans-serif" }}
               >
